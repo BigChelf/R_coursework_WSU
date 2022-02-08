@@ -1,0 +1,114 @@
+---
+title: "Anthony Chelf Stat435 Quiz4"
+author: "Anthony Chelf"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Question 1
+
+```{r}
+library(ISLR)
+library(MASS)
+attach(Boston)
+```
+The next 10 chunks are creating different lm models using poly() where the only difference is the degree.
+```{r}
+lm.fit1 <- lm(nox ~ poly(dis, 1), data = Boston)
+summary(lm.fit1)
+```
+```{r}
+lm.fit2 <- lm(nox ~ poly(dis, 2), data = Boston)
+summary(lm.fit2)
+```
+```{r}
+lm.fit3 <- lm(nox ~ poly(dis, 3), data = Boston)
+summary(lm.fit3)
+```
+```{r}
+lm.fit4 <- lm(nox ~ poly(dis, 4), data = Boston)
+summary(lm.fit4)
+```
+```{r}
+lm.fit5 <- lm(nox ~ poly(dis, 5), data = Boston)
+summary(lm.fit5)
+```
+```{r}
+lm.fit6 <- lm(nox ~ poly(dis, 6), data = Boston)
+summary(lm.fit6)
+```
+```{r}
+lm.fit7 <- lm(nox ~ poly(dis, 7), data = Boston)
+summary(lm.fit7)
+```
+```{r}
+lm.fit8 <- lm(nox ~ poly(dis, 8), data = Boston)
+summary(lm.fit8)
+```
+```{r}
+lm.fit9 <- lm(nox ~ poly(dis, 9), data = Boston)
+summary(lm.fit9)
+```
+```{r}
+lm.fit10 <- lm(nox ~ poly(dis, 10), data = Boston)
+summary(lm.fit10)
+```
+Creating a plot to visualize a range of 10 degrees.
+```{r}
+library(gam)
+rss <- rep(NA, 10)
+for (i in 1:10) {
+  fit <- lm(nox ~ poly(dis, i), data = Boston)
+  rss[i] <- sum(fit$residuals ^ 2)
+}
+plot(1:10, rss, type = 'l', xlab = "Degree", ylab = "RSS")
+```
+```{r}
+rss
+```
+Performing the anova on our lm models from above.
+```{r}
+anova(lm.fit1, lm.fit2, lm.fit3, lm.fit4, lm.fit5, lm.fit6, lm.fit7, lm.fit8, lm.fit9, lm.fit10,
+      test = 'F')
+```
+After comparing the summaries, generating a plot, and performing the anova on 10 different models of where the only difference is incrementing the degree by 1, the best model appears to be the one where the polynomial degree is at 3, so in this case that would be "lm.fit3."
+```{r}
+mean(lm.fit3$residuals^2)
+```
+The MSE for lm.fit3 is 0.003822345
+
+# Question 2
+
+Fitting a natural cubic spline to the Boston data set with the knots set utilizing quantile().
+```{r}
+sp.fit = lm(nox ~ ns(dis, knots = c(quantile(Boston$dis, c(.2,.4,.6,.8)))), data = Boston)
+summary(sp.fit)
+```
+```{r}
+mean(sp.fit$residuals^2)
+```
+The MSE for our above model is 0.003676347.
+
+# Question 3
+
+Performing a 5-fold cross validation over knots 2,4,6,8,10 to find the best fitting natural cubic spline.
+```{r}
+library(boot)
+set.seed(1)
+testMSE = c()
+df.knots = c(2,4,6,8,10)
+for(i in df.knots)
+{
+  glm.fit = glm(nox ~ ns(dis, i), data = Boston)
+  testMSE = c(testMSE, cv.glm(Boston, glm.fit, K = 5)$delta[1])
+}
+plot(testMSE, xlab = "Degree", ylab = "Test MSE", type = "l", pch = 19, lwd = 2)
+```
+```{r}
+testMSE
+```
+```{r}
+summary(glm.fit)
+```
+When looking at the plot above and the summary of the glm.fit, the best model would be here: "ns(dis, i)8  -0.282927   0.025216 -11.220  < 2e-16 ***." If I were to go through and follow the rationale from the first question, generating models for each shift in degree, it would be model 8, corresponding the the 4th degree on the above plot. That means then that the MSE for the best fitting model is: 0.003663954.

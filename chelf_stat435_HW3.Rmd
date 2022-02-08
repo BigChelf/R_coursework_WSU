@@ -1,0 +1,340 @@
+---
+title: "Stat435 HW3"
+author: "Anthony Chelf"
+date: "11/06/2021"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Q1. Question 1 of Chapter 4 of the ISLR book. (Page 168).
+
+# 1 Using a little bit of algebra, prove that (4.2) is equivalent to (4.3). In other words, the logistic function representation and logit representation for the logistic regression model are equivalent.
+![Solution for Question 1](/Users/BigChelf/Desktop/STAT435/Homework/stat435 hw3 q1.png)
+
+See answer on page 2.
+
+# Q2. Question 2 of Chapter 4 of the ISLR book. (Page 168).
+
+# 2 It was stated in the text that classifying an observation to the class for which (4.12) is largest is equivalent to classifying an observation to the class for which (4.13) is largest. Prove that this is the case. In other words, under the assumption that the observations in the kth class are drawn from a N(μk, σ2) distribution, the Bayes’ classifier assigns an observation to the class for which the discriminant function is maximized.
+![Solution for Question 2](/Users/BigChelf/Desktop/STAT435/Homework/stat435 hw3 q2.jpg)
+
+See answer on page 3.
+
+# Q3. Question 5 of Chapter 4 of the ISLR book. (Page 169).
+
+# 5. We now examine the differences between LDA and QDA.
+
+# (a) If the Bayes decision boundary is linear, do we expect LDA or QDA to perform better on the training set? On the test set?
+
+We'd expect QDA to perform better on the training set and LDA to perform better on the test set.
+
+# (b) If the Bayes decision boundary is non-linear, do we expect LDA or QDA to perform better on the training set? On the test set?
+
+The QDA would be better for both sets here if the bayes decision boundary is non-linear.
+
+# (c) In general, as the sample size n increases, do we expect the test prediction accuracy of QDA relative to LDA to improve, decline, or be unchanged? Why?
+
+QDA has more flexibility than LDA and would be better if n is a large value. Not knowing whether the boundary is linear vs non-linear doesn't help, but if it was linear than as n increases then LDA would be better than QDA, and if it was non-linear then QDAs predictive accuracy would be better.
+
+# (d) True or False: Even if the Bayes decision boundary for a given problem is linear, we will probably achieve a superior test error rate using QDA rather than LDA because QDA is flexible enough to model a linear decision boundary. Justify your answer.
+
+False. A smaller sample means the variance from QDA could overfit the data, yielding a worse test error rate. Increased flexibility is not indicative of a model immediately being better.
+
+# Q4. Question 6 of Chapter 4 of the ISLR book. (Page 170).
+
+# 6. Suppose we collect data for a group of students in a statistics class with variables X1 =hours studied, X2 =undergrad GPA, and Y = receive an A. We fit a logistic regression and produce estimated coefficient, ˆ β0 = −6, ˆβ1 = 0.05, ˆβ2 = 1.
+
+# (a) Estimate the probability that a student who studies for 40 h and has an undergrad GPA of 3.5 gets an A in the class.
+
+```{r}
+prob <- function(x1,x2){
+  z <- exp(-6 + 0.05*x1 + 1*x2);
+  return(round(z/(1+z),2))
+}
+```
+```{r}
+prob(40,3.5)
+```
+
+There is roughly a ~38% chance this student will get an A as is.
+
+# (b) How many hours would the student in part (a) need to study to have a 50% chance of getting an A in the class?
+
+```{r}
+hr <- seq(40,60,1)
+prob_A <- mapply(hr, 3.5, FUN=prob)
+names(prob_A) <- paste0(hr,"h")
+prob_A
+```
+Looking at this you can see that at 50 hours of studying, the student would have a 50% chance of getting an A.
+
+# Q5. Question 7 of Chapter 4 of the ISLR book. (Page 170).
+
+# 7. Suppose that we wish to predict whether a given stock will issue a dividend this year (“Yes” or “No”) based on X, last year’s percent profit.We examine a large number of companies and discover that the mean value of X for companies that issued a dividend was ¯X = 10, while the mean for those that didn’t was ¯X = 0. In addition, the variance of X for these two sets of companies was ˆσ2 = 36. Finally, 80% of companies issued dividends. Assuming that X follows a normal distribution, predict the probability that a company will issue a dividend this year given that its percentage profit was X = 4 last year.
+
+```{r}
+round((0.8 * exp(-0.5) / sqrt(72*pi)) / ((0.2 * exp(-2/9) / sqrt(72*pi)) + (0.8 * exp(-0.5) / sqrt(72*pi))), 3)
+```
+The probability that a dividend will be issued is ~75.2%.
+
+# Q6. Question 10 of Chapter 4 of the ISLR book (Page 171) (all parts except part (g)). You may also consider using regularized logistic regression to select predictors.
+
+# 10. This question should be answered using the Weekly data set, which is part of the ISLR package. This data is similar in nature to the Smarket data from this chapter’s lab, except that it contains 1, 089 weekly returns for 21 years, from the beginning of 1990 to the end of 2010.
+
+# (a) Produce some numerical and graphical summaries of the Weekly data. Do there appear to be any patterns?
+
+```{r}
+library(ISLR)
+library(corrplot)
+summary(Weekly)
+```
+```{r}
+cor(Weekly[, -9])
+```
+```{r}
+corrplot(cor(Weekly[,-9]), method="square")
+```
+```{r}
+attach(Weekly)
+plot(Volume)
+```
+After looking at the generated numerical/graphical summaries, the only variables that initially seem to have an significant relationship are the Year and Volume, with volume increasing over time.
+
+# (b) Use the full data set to perform a logistic regression with Direction as the response and the five lag variables plus Volume as predictors. Use the summary function to print the results. Do any of the predictors appear to be statistically significant? If so, which ones?
+
+```{r}
+glm.fit <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = Weekly, family = binomial)
+summary(glm.fit)
+```
+Currently, Lag2 is the only variable with any statistical significance. Outside of that, the others fail to reject the null hypothesis.
+
+# (c) Compute the confusion matrix and overall fraction of correct predictions. Explain what the confusion matrix is telling you about the types of mistakes made by logistic regression.
+
+```{r}
+prob <- predict(glm.fit, type = "response")
+pred.glm <- rep("Down", length(prob))
+pred.glm[prob > 0.5] <- "Up"
+table(pred.glm, Direction)
+```
+```{r}
+(54+557)/1089 # weekly market trend
+557/(48+557) # weekly market up trend
+54/(430+54) # weekly market down trend
+```
+This shows that the model predicted correctly for the weekly market trend just ~56% of the time. The model correctly predicted the up trends ~92% of the time, but the down trends at just ~11% of the time.
+
+# (d) Now fit the logistic regression model using a training data period from 1990 to 2008, with Lag2 as the only predictor. Compute the confusion matrix and the overall fraction of correct predictions for the held out data (that is, the data from 2009 and 2010).
+
+```{r}
+train <- (Year < 2009)
+Weekly.20092010 <- Weekly[!train, ]
+Direction.20092010 <- Direction[!train]
+glm.fit2 <- glm(Direction ~ Lag2, data = Weekly, family = binomial, subset = train)
+summary(glm.fit2)
+
+prob2 <- predict(glm.fit2, Weekly.20092010, type = "response")
+pred.glm2 <- rep("Down", length(prob2))
+pred.glm2[prob2 > 0.5] <- "Up"
+table(pred.glm2, Direction.20092010)
+```
+```{r}
+(9+56)/104 # percentage of correct predictions
+56/(56+5) # percentage of up correct predictions
+9/(9+34) # percentage of down correct predictions
+```
+We can see that the percentage of correct predictions is 62.5%, for when the market is up it is 91.8% and for when it is down it is 20.9%.
+
+# (e) Repeat (d) using LDA.
+
+```{r}
+library(MASS)
+lda.fit <- lda(Direction ~ Lag2, data = Weekly, subset = train)
+lda.fit
+```
+```{r}
+pred.lda <- predict(lda.fit, Weekly.20092010)
+table(pred.lda$class, Direction.20092010)
+```
+```{r}
+(9+56)/104 # percentage of correct predictions
+56/(56+5) # percentage of up correct predictions
+9/(9+34) # percentage of down correct predictions
+```
+We can see that the percentage of correct predictions is 62.5%, for when the market is up it is 91.8% and for when it is down it is 20.9%.
+
+# (f) Repeat (d) using QDA.
+
+```{r}
+qda.fit <- qda(Direction ~ Lag2, data = Weekly, subset = train)
+qda.fit
+```
+```{r}
+pred.qda <- predict(qda.fit, Weekly.20092010)
+table(pred.qda$class, Direction.20092010)
+```
+```{r}
+(0+61)/104 # weekly
+61/(61+0) # up
+0/(0+43) #down
+```
+Unlike the previous two models, QDA yields different results. The percentage of correct predictions for the weekly market is ~58.7%. When the market is up the model is correct 100% of the time and when the market is down the model is correct 0% of the time.
+
+# (h) Which of these methods appears to provide the best results on this data?
+
+Logistic Regression and Linear Discriminant Analysis have the higher accuracy rates at 62.5%. 
+
+# (i) Experiment with different combinations of predictors, including possible transformations and interactions, for each of the methods. Report the variables, method, and associated confusion matrix that appears to provide the best results on the held out data. Note that you should also experiment with values for K in the KNN classifier.
+
+```{r}
+glm.fit3 <- glm(Direction ~ Lag2:Lag1, data = Weekly, family = binomial, subset = train)
+prob3 <- predict(glm.fit3, Weekly.20092010, type = "response")
+pred.glm3 <- rep("Down", length(prob3))
+pred.glm3[prob3 > 0.5] = "Up"
+table(pred.glm3, Direction.20092010)
+mean(pred.glm3 == Direction.20092010)
+```
+```{r}
+qda.fit2 <- qda(Direction ~ Lag2 + sqrt(abs(Lag2)), data = Weekly, subset = train)
+pred.qda2 <- predict(qda.fit2, Weekly.20092010)
+table(pred.qda2$class, Direction.20092010)
+mean(pred.qda2$class == Direction.20092010)
+```
+```{r}
+lda.fit2 <- lda(Direction ~ Lag2:Lag1, data = Weekly, subset = train)
+pred.lda2 <- predict(lda.fit2, Weekly.20092010)
+table(pred.lda2$class, Direction.20092010)
+mean(pred.lda2$class == Direction.20092010)
+```
+After testing a few different combinations it is clear that the first Logistic Regression and Linear Discriminant Analysis still have the higher accuracy rates at 62.5%. 
+
+# Q7. Question 13 of Chapter 4 of the ISLR book. (Page 173). (Use LDA, QDA, logistic regression, regularized logistic regression, you may also consider linear regression).
+
+# 13. Using the Boston data set, fit classification models in order to predict whether a given suburb has a crime rate above or below the median. Explore logistic regression, LDA, and KNN models using various subsets of the predictors. Describe your findings.
+
+```{r}
+summary(Boston)
+```
+```{r}
+attach(Boston)
+```
+```{r}
+crim01 <- rep(0, length(crim))
+crim01[crim > median(crim)] <- 1
+Boston <- data.frame(Boston, crim01)
+
+train <- 1:(length(crim) / 2)
+test <- (length(crim) / 2 + 1):length(crim)
+Boston.train <- Boston[train, ]
+Boston.test <- Boston[test, ]
+crim01.test <- crim01[test]
+```
+
+```{r}
+glm.fit4 <- glm(crim01 ~ . - crim01 - crim, data = Boston, family = binomial, subset = train)
+```
+```{r}
+prob4 <- predict(glm.fit4, Boston.test, type = "response")
+pred.glm4 <- rep(0, length(prob4))
+pred.glm4[prob4 > 0.5] <- 1
+table(pred.glm4, crim01.test)
+
+mean(pred.glm4 != crim01.test)
+```
+Logistic Regression yields a test-error rate of ~18.2%.
+
+```{r}
+glm.fit5 <- glm(crim01 ~ . - crim01 - crim - chas - nox - tax - medv, data = Boston, family = binomial, subset = train)
+```
+```{r}
+prob5 <- predict(glm.fit5, Boston.test, type = "response")
+pred.glm5 <- rep(0, length(prob5))
+pred.glm5[prob5 > 0.5] <- 1
+table(pred.glm5, crim01.test)
+mean(pred.glm5 != crim01.test)
+```
+Now Logistic Regression yields a test-error rate of ~16.6%.
+
+```{r}
+lda.fit3 <- lda(crim01 ~ . - crim01 - crim, data = Boston, subset = train)
+pred.lda3 <- predict(lda.fit3, Boston.test)
+table(pred.lda3$class, crim01.test)
+
+mean(pred.lda3$class != crim01.test)
+```
+Linear Discriminant Analysis yields a ~13.4% test-error rate here.
+
+```{r}
+lda.fit4 <- lda(crim01 ~ . - crim01 - crim - chas - nox - tax - medv, data = Boston, subset = train)
+pred.lda4 <- predict(lda.fit4, Boston.test)
+table(pred.lda4$class, crim01.test)
+
+mean(pred.lda4$class != crim01.test)
+```
+Now Linear Discriminant Analysis yields a ~14.2% test-error rate.
+
+```{r}
+qda.fit3 <- qda(crim01 ~ . - crim01 - crim, data = Boston, subset = train)
+pred.qda3 <- predict(qda.fit3, Boston.test)
+table(pred.qda3$class, crim01.test)
+
+mean(pred.qda3$class != crim01.test)
+```
+QDA yields a ~65.2% test-error rate.
+
+```{r}
+qda.fit4 <- qda(crim01 ~ . - crim01 - crim - chas - nox - tax - medv, data = Boston, subset = train)
+pred.qda4 <- predict(qda.fit4, Boston.test)
+table(pred.qda4$class, crim01.test)
+
+mean(pred.qda4$class != crim01.test)
+```
+Now QDA yields a ~66% test-error rate.
+
+Out of LDA, QDA, and Logistic Regression, LDA had the lowest test-error rate followed closely by Logistic Regression, and distantly by QDA.
+
+# Q8. Consider the data set provided with this homework assignment. Implement LDA and QDA classifiers on this data and compare the two classifiers using a ROC curve.
+
+```{r}
+Hw3data <- read.csv("Hw3data.csv")
+```
+```{r}
+attach(Hw3data)
+```
+
+```{r}
+lda.fit5 <- lda(response ~ predictor.1+predictor.2+predictor.3+predictor.4+predictor.5, data = Hw3data)
+lda.fit5
+```
+```{r}
+pred.lda5 <- predict(lda.fit5)
+table(pred.lda5$class, Hw3data$response)
+mean(pred.lda5$class != Hw3data$response)
+```
+```{r}
+qda.fit5 <- qda(response ~ predictor.1+predictor.2+predictor.3+predictor.4+predictor.5, data = Hw3data)
+qda.fit5
+```
+```{r}
+pred.qda5 <- predict(qda.fit5)
+table(pred.qda5$class, Hw3data$response)
+mean(pred.qda5$class != Hw3data$response)
+```
+```{r}
+library(ROCR)
+library(AUC)
+```
+
+```{r}
+par(mfrow=c(1, 100))
+
+
+```
+```{r}
+labels <- as.factor(ifelse(pred.lda5$class=="Y", 1, 0))
+predictions <- pred.lda5$class
+plot(roc(predictions, labels), min = 0, max = 1, type="1", main="LDA - ROC Chart")
+```
+
+
+

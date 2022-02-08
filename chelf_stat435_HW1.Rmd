@@ -1,0 +1,445 @@
+---
+title: "Stat435 HW1"
+author: "Anthony Chelf"
+date: "9/16/2021"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Question 1a
+Is there a relationship between the predictor and the response?
+
+Yes, if you look at the significance code for the p-value you can see that there is a strong relationship
+
+How strong is the relationship between the predictor and the response?
+
+Looking at the R-squared (.6059) value we can see that horsepower is reponsibible for around 61% of the variation in mpg.
+
+Is the relationship between the predictor and the response positive or negative?
+
+The relationship is negative.
+
+What is the predicted mpg associated with a horsepower of 98? What are the associated 95% confidence and prediction intervals?
+
+       fit     lwr      upr
+ 1 24.46708 14.8094 34.12476
+
+       fit      lwr      upr
+ 1 24.46708 23.97308 24.96108
+
+```{r}
+library(ISLR)
+library(MASS)
+```
+```{r}
+data("Auto")
+head(Auto)
+```
+
+```{r}
+lm.fit<-lm(mpg~horsepower,data=Auto)
+summary(lm.fit)
+```
+```{r}
+predict(lm.fit,data.frame(horsepower=c(98)),interval="prediction")
+predict(lm.fit,data.frame(horsepower=c(98)),interval="confidence")
+```
+# Question 1b
+Plot the response and the predictor. Use the abline() function to display the least squares regression line.
+
+```{r}
+attach(Auto)
+```
+
+```{r}
+plot(horsepower,mpg, main = "MPG vs Horsepower")
+abline(lm.fit,lwd=3,col="green")
+```
+# Question 1c
+ Use the plot() function to produce diagnostic plots of the least squares regression fit. Comment on any problems you see with the fit.
+
+ The first plot (Residuals vs fitted) points to a non-linear relationship between mpg and horsepower (U-shape). Adding that fact to plot 2 makes the model seem like a poor choice. Looking at this without going further I'd suspect the potential for outliers.
+
+```{r}
+detach(Auto)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(lm.fit)
+```
+# Question 2a
+Using the rnorm() function, create a vector, X, containing 100 observations drawn from a N(0,1)distribution. This represents a feature, X.
+
+```{r}
+set.seed(1)
+```
+
+```{r}
+x <- rnorm(100)
+```
+# Question 2b
+Using the rnorm() function, create a vector, eps, containing 100 observations drawn from a N(0, 0.25) distribution i.e. a normal distribution with mean zero and variance 0.25.
+
+```{r}
+eps <- rnorm(100, sd = sqrt(0.25))
+```
+# Question 2c
+Using x and eps, generate a vector y according to the model Y = −1 + 0.5X + eps.What is the length of the vector y? What are the values of B0, B1 in this linear model?
+
+```{r}
+y <- -1 + 0.5 * x + eps
+```
+
+```{r}
+length(y)
+```
+
+B0 value: -1
+B1 value: .5
+y length: [1] 100
+# Quesiton 2d
+Create a scatterplot displaying the relationship between x and y. Fit a least squares linear model to predict y using x. Display the least squares line on the scatterplot. Draw the population regression line on the plot, in a different color. Use the legend() command to create an appropriate legend.
+
+```{r}
+lm.fit <- lm(y~x)
+summary(lm.fit)
+```
+
+```{r}
+plot(x,y,main="X Vs Y (1)")
+abline(lm.fit, col = "red")
+abline(-1, 0.5, col = "green")
+legend("bottomright", c("Least Squares Line", "Regression Line"), col = c("red", "green"), lty = c(1, 1))
+```
+# Question 2e
+Then fit a separate quadratic regression, i.e. Y = B0 + B1x + B2x2 + eps. Consider the training residual sum of squares (RSS) for the linear regression, and also the training RSS for the quadratic regression. Would we expect one to be lower than the other, would we expect them to be the same, or is there not enough information to tell? Justify your answer.
+
+```{r}
+lm.fit2 <- lm(y ~ x + I(x^2))
+summary(lm.fit2)
+```
+
+Looking at the p-value for this model shows a lack of significance. That shows a lack of evidence that quadratric regression is better, even if R-squared is a little higher and the residual standard error is a little lower than the previous linear model.
+# Question 2f 
+Answer (e) using a test rather than RSS.
+
+```{r}
+anova(lm.fit2, lm.fit)
+```
+
+After this test, I maintain that there is a lack of significant difference between the models based on the F-statistic and accompanying p-value.
+# Question 2g
+Repeat (a)-(f) after modifying the data generation process in such a way that there is less noise in the data. You can do this by decreasing the variance of the normal distribution used to generate the error term in (b). Describe your results.
+
+```{r}
+set.seed(1)
+```
+
+```{r}
+x <- rnorm(100)
+```
+
+```{r}
+eps <- rnorm(100, sd = .125)
+```
+
+```{r}
+y <- -1 + 0.5 * x + eps
+```
+
+```{r}
+lm.fit3 <- lm(y ~ x)
+summary(lm.fit3)
+```
+
+```{r}
+plot(x,y,main = "X Vs Y (2)")
+abline(lm.fit3, col = "red")
+abline(-1, 0.5, col = "green")
+legend("bottomright", c("Least Squares Line", "Regression Line"), col = c("red", "green"), lty = c(1, 1))
+```
+
+```{r}
+lm.fit4 <- lm(y ~ x + I(x^2))
+summary(lm.fit4)
+```
+
+```{r}
+anova(lm.fit4, lm.fit3)
+```
+
+Depending on how much you decrease the variance, you can effectively cause the lines to overlap one another. Again though, like the first two models, there isn't sufficient evidence to support a quadratic regression model being necessary.These second two models are very close to what we have the first time around.There is a difference between r-squared and residual standard error due to the increase in the linear relationship. R-squared is much greater now and the residual standard error much lower.
+# Question 3a
+For each predictor, fit a simple linear regression model to predict the response. Describe your results.In which of the models is there a statistically significant association between the predictor and the response? Create some plots to back up your assertions.
+
+```{r}
+library(MASS)
+```
+
+```{r}
+data("Boston")
+```
+
+```{r}
+attach(Boston)
+```
+# linear model and plot for crim and zn
+
+Looking at the p-value we see that zn is statistically significant to the response crim
+
+The plot points to a negative relationship
+
+```{r}
+lm.zn <- lm(crim ~ zn)
+summary(lm.zn)
+```
+
+```{r}
+plot(zn,crim, main = "Crim vs Zn")
+abline(lm.zn,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and indus
+Looking at the p-value we see that indus is statistically significant to the response crim
+
+The plot points to a negative relationship
+
+```{r}
+lm.indus <- lm(crim ~ indus)
+summary(lm.indus)
+```
+
+```{r}
+plot(indus,crim, main = "Crim vs Indus")
+abline(lm.indus,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and chas
+Looking at the p-value we see that chas is not statistically significant to the response crim
+
+The plot points to a lack of relationship
+
+```{r}
+lm.chas <- lm(crim ~ chas)
+summary(lm.chas)
+```
+
+```{r}
+plot(chas,crim, main = "Crim vs Chas")
+abline(lm.chas,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and nox
+Looking at the p-value we see that nox is statistically significant to the response crim
+
+The plot points to a positive relationship
+
+```{r}
+lm.nox <- lm(crim ~ nox)
+summary(lm.nox)
+```
+
+```{r}
+plot(nox,crim, main = "Crim vs Nox")
+abline(lm.nox,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and rm
+Looking at the p-value we see that rm is statistically significant to the response crim
+
+The plot points to a negative relationship
+
+```{r}
+lm.rm <- lm(crim ~ rm)
+summary(lm.rm)
+```
+
+```{r}
+plot(rm,crim, main = "Crim vs Rm")
+abline(lm.rm,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and age
+Looking at the p-value we see that age is statistically significant to the response crim
+
+The plot points to a positive relationship
+
+```{r}
+lm.age <- lm(crim ~ age)
+summary(lm.age)
+```
+
+```{r}
+plot(age,crim, main = "Crim vs Age")
+abline(lm.age,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and dis
+Looking at the p-value we see that dis is statistically significant to the response crim
+
+The plot points to a negative relationship with a sloping shape
+
+```{r}
+lm.dis <- lm(crim ~ dis)
+summary(lm.dis)
+```
+
+```{r}
+plot(dis,crim, main = "Crim vs Dis")
+abline(lm.dis,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and rad
+Looking at the p-value we see that rad is statistically significant to the response crim
+
+The plot points to a positive relationship
+
+```{r}
+lm.rad <- lm(crim ~ rad)
+summary(lm.rad)
+```
+
+```{r}
+plot(rad,crim, main = "Crim vs Rad")
+abline(lm.rad,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and tax
+Looking at the p-value we see that tax is statistically significant to the response crim
+
+The plot points to a positive relationship
+
+```{r}
+lm.tax <- lm(crim ~ tax)
+summary(lm.tax)
+```
+
+```{r}
+plot(tax,crim, main = "Crim vs Tax")
+abline(lm.tax,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and ptratio
+Looking at the p-value we see that ptratio is statistically significant to the response crim
+
+The plot points to a positive relationship
+
+```{r}
+lm.ptratio <- lm(crim ~ ptratio)
+summary(lm.ptratio)
+```
+
+```{r}
+plot(ptratio,crim, main = "Crim vs Ptratio")
+abline(lm.ptratio,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and black
+Looking at the p-value we see that black is statistically significant to the response crim
+
+The plot points to a negative relationship
+
+```{r}
+lm.black <- lm(crim ~ black)
+summary(lm.black)
+```
+
+```{r}
+plot(black,crim, main = "Crim vs Black")
+abline(lm.black,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and lstat
+Looking at the p-value we see that lstat is statistically significant to the response crim
+
+The plot points to a positive relationship
+
+```{r}
+lm.lstat <- lm(crim ~ lstat)
+summary(lm.lstat)
+```
+
+```{r}
+plot(lstat,crim, main = "Crim vs Lstat")
+abline(lm.lstat,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+
+# linear model and plot for crim and medv
+Looking at the p-value we see that medv is statistically significant to the response crim
+
+The plot points to a negative relationship with a sloping shape
+
+```{r}
+lm.medv <- lm(crim ~ medv)
+summary(lm.medv)
+```
+
+```{r}
+plot(medv,crim, main = "Crim vs Medv")
+abline(lm.medv,col = "red",lwd = 3)
+legend("topright", c( "Regression Line"), col = c("red"), lty = c(1, 1))
+```
+# Question 3b
+Fit a multiple regression model to predict the response using all of the predictors. Describe your results. For which predictors can we reject the null hypothesis H0 : Bj = 0?
+
+multiple linear regression model for the whole Boston dataset
+
+```{r}
+lm.full <- lm(crim ~.,data = Boston)
+summary(lm.full)
+```
+dis and rad are both statistically significant at the .001 level
+
+medv is statistically significant at the .01 level
+
+zn and black are statistically significant at the .05 level
+
+For zn, dis, rad, black, and medv: we can reject the null hypothesis
+
+All other predictors are not statistically significant, the p-values are too high, we cannot reject the null hypothesis
+
+The r-squared is not very high, this model doesn't really support the Boston dataset very well
+# Question 3c 
+How do your results from (a) compare to your results from (b)? Create a plot displaying the univariate regression coefficients from (a) on the x-axis, and the multiple regression coefficients from (b) on the y-axis. That is, each predictor is displayed as a single point in the plot. Its coefficient in a simple linear regression model is shown on the x-axis, and its coefficient estimate in the multiple linear regression model is shown on the y-axis.
+
+```{r}
+ur.model <- vector("numeric",0)
+ur.model <- c(ur.model, lm.zn$coefficient[2])
+ur.model <- c(ur.model, lm.indus$coefficient[2])
+ur.model <- c(ur.model, lm.chas$coefficient[2])
+ur.model <- c(ur.model, lm.nox$coefficient[2])
+ur.model <- c(ur.model, lm.rm$coefficient[2])
+ur.model <- c(ur.model, lm.age$coefficient[2])
+ur.model <- c(ur.model, lm.dis$coefficient[2])
+ur.model <- c(ur.model, lm.rad$coefficient[2])
+ur.model <- c(ur.model, lm.tax$coefficient[2])
+ur.model <- c(ur.model, lm.ptratio$coefficient[2])
+ur.model <- c(ur.model, lm.black$coefficient[2])
+ur.model <- c(ur.model, lm.lstat$coefficient[2])
+ur.model <- c(ur.model, lm.medv$coefficient[2])
+mr.model <- vector("numeric", 0)
+mr.model <- c(mr.model, lm.full$coefficients)
+mr.model <- mr.model[-1]
+```
+
+```{r}
+plot(ur.model, mr.model, pch = 5:17, col = 5:17, ylab = "Multiple Regression Coefficients", xlab = "Univariate Regression Coefficients", main = "Multiple vs Univariate Regression")
+legend("topright", c("zn","indus","chas","nox","rm","age","dis","rad","tax","ptratio","black","lstat","medv"), pch = 5:17, col = 5:17)
+```
+
+There is a pretty substantial difference here. The slope for the univariate regression model represents the average effect each predictor will have on the crim response. It does not take into account the other predictors. The multiple regression however, does take into account other predictors and its slope represents the average effect of an increase in any of the predictors on the crim response. The univariate regression shows that there could be strong relationships between predictors while the mutliple regression points to no relationship for the majority of the predictors on the crim response.
+

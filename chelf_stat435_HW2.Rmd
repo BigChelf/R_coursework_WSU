@@ -1,0 +1,312 @@
+---
+title: "Stat435 HW2"
+author: "Anthony Chelf"
+date: "10/13/2021"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Question 1
+Do question 14 of chapter 3 of the ISLR book. (Page 125).
+
+# 14a
+The problem focuses on the collinearity problem. Perform the following commands in R:
+
+```{r}
+set.seed(1)
+```
+```{r}
+x1=runif(100)
+x2=0.5*x1+rnorm(100)/10
+y=2+2*x1+0.3*x2+rnorm(100)
+```
+
+The last line corresponds to creating a linear model in which y is a function of x1 and x2. Write out the form of the linear model. What are the regression coefficients?
+
+The linear model is: y = 2 + 2x1 + 0.3x2 + eps
+The regression coefficients are: 2, 2, 0.3
+
+# 14b
+What is the correlation between x1 and x2? Create a scatterplot displaying the relationship between the variables.
+```{r}
+cor(x1, x2)
+```
+```{r}
+plot(x1, x2)
+```
+# 14c
+Using this data, fit a least squares regression to predict y using x1 and x2. Describe the results obtained. What are Bhat0, Bhat1, and Bhat2? How do these relate to the true B0, B1, and B2? Can you reject the null hypothesis H0 : B1 = 0? How about the null hypothesis H0 : B2 = 0?
+```{r}
+lm.fit <- lm(y ~ x1 + x2)
+summary(lm.fit)
+```
+Bhat0 = 2.1305, Bhat1 = 1.4396, and Bhat2 = 1.0097. Bhat 0 is close to B0 (2.1305 vs 2), but the other two aren't close. Looking at the p-values, we can reject the null hypothesis H0: B1 = 0, but we may not reject the null hypothesis at H0: B2 = 0.
+
+# 14d
+Now fit a least squares regression to predict y using only x1. Comment on your results. Can you reject the null hypothesis H0: B1 = 0?
+```{r}
+lm.fit2 <- lm(y ~ x1)
+summary(lm.fit2)
+```
+When x1 is the sole predictor, we see that is has a much smaller p-value than what we saw from the first lm.fit model. We may reject H0: B1 = 0.
+
+# 14e
+Now fit a least squares regression to predict y using only x2. Comment on your results. Can you reject the null hypothesis H0: B2 = 0?
+```{r}
+lm.fit3 <- lm(y ~ x2)
+summary(lm.fit3)
+```
+When x2 is the sole predictor, we see that it has a much smaller p-value than what we saw from the first lm.fit model. We may reject H0: B2 = 0.
+
+# 14f
+Do the results obtained in (c)-(e) contradict each other? Explain your answer.
+
+They don't seem contradictory. From the plot and the correlation we constructed in part b between x1 and x2, we can see collinearity. Because of this collinearity, it is a little harder to see their effects in the joint regression model. When we have them in their own regression models, we can see the relationship they each have with y more clearly.
+
+# 14g
+Now suppose we obtain one additional observation, which was unfortunately mismeasured.
+```{r}
+x1=c(x1, 0.1)
+x2=c(x2, 0.8)
+y=c(y,6)
+```
+
+Re-fit the linear models from (c)-(e) using this new data. What effect does the new observation have on each of the models? In each model, is this observation an outlier? A high-leverage point? Both? Explain your answers.
+```{r}
+lm.fit4 <- lm(y ~ x1 + x2)
+summary(lm.fit4)
+```
+```{r}
+cor(x1,x2)
+```
+In our first lm.fit model, x1 had significance with a p-value less than 0.05. Our new model has the situation flipped with x2 now having the smaller p-value. When checking the correlation between x1 and x2 again, we can see a significant reduction showing that the added observation had some effect on our data.
+
+```{r}
+lm.fit5 <- lm(y ~ x1)
+summary(lm.fit5)
+```
+
+```{r}
+lm.fit6 <- lm(y ~ x2)
+summary(lm.fit6)
+```
+```{r}
+plot(lm.fit4)
+```
+```{r}
+plot(lm.fit5)
+```
+```{r}
+plot(lm.fit6)
+```
+In lm.fit4 and lm.fit6, we can see clearly that the point becomes a high-leverage point. In lm.fit5 the point appears to be an outlier. 
+
+# Question 2
+Before attempting this question, set the seed number in R by using set.seed(1) to ensure consistent results.
+```{r}
+set.seed(1)
+```
+
+# Question 2a
+Simulate a training data set of n = 25 observations as y = exp(x) + eps where x and eps are generated via a normal distribution with mean zero and standard deviation one. (Use rnorm() to simulate these variables).
+
+```{r}
+x = rnorm(n=25,mean=0,sd=1)
+eps = rnorm(n=25,mean=0,sd=1)
+y = exp(x)+eps
+x2=x^2
+x3=x^3
+x4=x^4
+```
+
+# Question 2b
+Fit the following four linear regression models to the above training data set (using the lm() function in R.)
+```{r}
+lm.fit <- lm(y~x)
+summary(lm.fit)
+```
+```{r}
+lm.fit2 <- lm(y~x+x2)
+summary(lm.fit2)
+```
+```{r}
+lm.fit3 <- lm(y~x+x2+x3)
+summary(lm.fit3)
+```
+```{r}
+lm.fit4 <- lm(y~x+x2+x3+x4)
+summary(lm.fit4)
+```
+# Question 2c
+Now simulate a testing data set with n = 500 observations from the model in part (a), by generating new values of x and eps.
+
+```{r}
+x=rnorm(n=500,mean=0,sd=1)
+eps=rnorm(n=500,mean=0,sd=1)
+y=as.matrix(exp(x)+eps)
+```
+
+# Question 2d
+Use the estimated coefficients in part (b) to compute the test error, i.e. the MSE of the testing data set for each of the four models computed in part (b).
+```{r}
+x2=x^2
+x3=x^3
+x4=x^4
+b0=rep(1,500)
+x1=matrix(c(b0,x),byrow=F,nrow=500)
+b1=as.matrix(lm.fit$coefficients)
+yhat1=x1%*%b1
+mse1=sum((y-yhat1)^2)/500
+mse1
+```
+```{r}
+x2=x^2
+x3=x^3
+x4=x^4
+b0=rep(1,500)
+x2=matrix(c(b0,x,x2),byrow=F,nrow=500)
+b2=as.matrix(lm.fit2$coefficients)
+yhat2=x2%*%b2
+mse2=sum((y-yhat2)^2)/500
+mse2
+```
+```{r}
+x2=x^2
+x3=x^3
+x4=x^4
+b0=rep(1,500)
+x3=matrix(c(b0,x,x2,x3),byrow=F,nrow=500)
+b3=as.matrix(lm.fit3$coefficients)
+yhat3=x3%*%b3
+mse3=sum((y-yhat3)^2)/500;mse3
+```
+```{r}
+x2=x^2
+x3=x^3
+x4=x^4
+b0=rep(1,500)
+x4=matrix(c(b0,x,x2,x3,x4),byrow=F,nrow=500)
+b4=as.matrix(lm.fit4$coefficients)
+yhat4=x4%*%b4
+mse4=sum((y-yhat4)^2)/500;mse4
+```
+# Question 2e
+Based on your results of part (b), which model would you recommend as the 'best fit model'? Is the conclusion surprising?
+
+The smallest MSE is from our lm.fit2 model. The lower the MSE, the better fit. The conclusion isn't surprising when you go back and look at the summary of each of the models, specifically the RSE and R-squared values.
+
+# Question 3
+Consider the Hitters data in the ISLR package, our objective here is to predict the salary variable as the response using the remaining variables.
+
+# Question 3a
+Split the data into a training and testing data set.
+
+```{r}
+library(ISLR)
+```
+
+```{r}
+attach(Hitters)
+Hitters=na.omit(Hitters)
+```
+```{r}
+set.seed(8)
+```
+```{r}
+t_set <- sample(nrow(Hitters), nrow(Hitters)*.7)
+train <- Hitters[t_set,]
+test <- Hitters[-t_set,]
+```
+
+#Question 3b
+Fit a linear model using least squares on the training set and report the test error obtained.
+
+```{r}
+lm.fit <- lm(Salary ~ .,data = train)
+summary(lm.fit)
+```
+```{r}
+lm.pred <- predict(lm.fit,test)
+lm.error <- mean((test$Salary-lm.pred)^2)
+lm.error
+```
+# Quesiton 3c
+Fit a regression model on the training set, with lambda chosen by cross-validation. Report the test error obtained.
+
+```{r}
+library(glmnet)
+```
+
+```{r}
+set.seed(8)
+```
+```{r}
+train.x <- model.matrix(Salary ~ ., data = train)
+test.x <- model.matrix(Salary ~., data = test)
+train.y <- train$Salary
+test.y <- test$Salary
+grid <- 10 ^ seq(4,-2, length = 100)
+fit.ridge <- glmnet(train.x, train.y, alpha = 0, lambda = grid)
+cv.ridge <- cv.glmnet(train.x, train.y, alpha = 0, lambda = grid) 
+plot(cv.ridge)
+```
+```{r}
+best.lambda1 <- cv.ridge$lambda.min
+best.lambda1
+```
+
+```{r}
+ridge.pred <- predict(fit.ridge, s = best.lambda1, newx = test.x)
+ridge.error <- mean((ridge.pred - test.y)^2)
+print(ridge.error) # generating the test error for the ridge model.
+```
+# Question 3d
+Fit a lasso model on the training set, with lambda chosen by cross validation. Report the test error obtained,along with the number of non-zero coefficients estimates.
+```{r}
+set.seed(8)
+fit.lasso <- glmnet(train.x, train.y, alpha =1, lambda= grid)
+cv.lasso <- cv.glmnet(train.x, train.y, alpha =1, lambda = grid)
+best.lambda2 <- cv.lasso$lambda.min
+best.lambda2
+plot(cv.lasso)
+```
+```{r}
+lasso.pred <- predict(fit.lasso, s = best.lambda2, newx = test.x)
+lasso.error <- mean((lasso.pred - test.y)^2)
+print(lasso.error) # generating test error for the lasso model.
+```
+```{r}
+coeff.lasso <- predict(fit.lasso, type = "coefficients", s = best.lambda2, )[1:18,]
+print(coeff.lasso)
+```
+```{r}
+coeff.lasso[coeff.lasso!=0] # generating non-zero coefficient estimates
+```
+
+
+# Question 3e
+Comment on the results obtained. How accurately can we predict the number of hitters salaries? Is there much difference among the test errors resulting from these three approaches?
+
+```{r}
+com.error <- c(lm.error, ridge.error, lasso.error)
+names(com.error) <- c("lm","ridge","lasso")
+testerror.plot <- barplot(com.error, col = 'green')
+```
+
+```{r}
+test.avg <- mean(test$Salary)
+lm.r2 <- 1 - mean((lm.pred - test$Salary)^2) / mean((test.avg - test$Salary)^2)
+ridge.r2 <- 1 - mean((ridge.pred - test$Salary)^2) / mean((test.avg - test$Salary)^2)
+lasso.r2 <- 1 - mean((lasso.pred - test$Salary)^2) / mean((test.avg - test$Salary)^2)
+lm.r2
+ridge.r2
+lasso.r2
+```
+
+These low R-squared values are showing that these models don't really explain the variation in our response variable very well. If we had to choose a model to work with though, the ridge model would be it, followed by the lasso model, and lastly the lm model in a distant 3rd. At this point, I'd say we can't very accurately predict the salary of hitters based on just these variables alone, at least not with how we've manipulated this data for this assignment.
+
+
+
+
+

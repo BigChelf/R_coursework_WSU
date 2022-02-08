@@ -1,0 +1,108 @@
+---
+title: "Stat435 Quiz3"
+author: "Anthony Chelf"
+date: "11/02/2021"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+#Question 1
+
+This problem is regarding writing your own code for K nearest neighbor classification.
+
+#1a.
+Import the training predictors (x), training response (y) and testing (x) data sets provided with this quiz. Merge the testing (x) and training (x) row-wise (using rbind()). The training (x) is a 100 x 4 data frame, the testing (x) is a 50 x 4 data frame, thus the combined data should be a 150 x 4 where the first 50 rows are of the testing data.
+
+Importing data sets:
+```{r}
+xtest = read.csv("C:\\Users\\BigChelf\\Desktop\\STAT435\\Quiz\\Quiz3\\xtestQ3-1.csv")
+xtrain = read.csv("C:\\Users\\BigChelf\\Desktop\\STAT435\\Quiz\\Quiz3\\xtrainQ3-1.csv")
+ytest = read.csv("C:\\Users\\BigChelf\\Desktop\\STAT435\\Quiz\\Quiz3\\ytestQ3-2.csv")
+ytrain = read.csv("C:\\Users\\BigChelf\\Desktop\\STAT435\\Quiz\\Quiz3\\ytrainQ3-2.csv")
+```
+Setting up a combined data set:
+```{r}
+combined_x = rbind(xtest, xtrain)
+```
+
+#1b.
+
+Compute a matrix of distances amongst all observations of the combined data set of part
+(a). (use the function dist()). For e.g. if df represents the 150 × 4 matrix of part (a), then dst=as.matrix(dist(df,method="euclidean")) should yield a matrix dst. The (i, j)th components of this matrix represents the distance between the ith and the jth rows of the data matrix df.
+
+Building our distance matrix utilizing our combined data set:
+```{r}
+dst_combined_x=as.matrix(dist(combined_x,method="euclidean"))
+dst_combined_x = dst_combined_x[, -c(1:50)]
+```
+
+#1c.
+
+For each testing data observation find the K=15 nearest training observation. Recall that in the distance matrix of part (b), the first 50 observations (rows) are testing and the remaining are training. To find the K observations with the least distances, use the following custom function knearest(). This will require you to setup a 50 × K matrix (say near.neigh), where each row represents each testing observation and each column has the corresponding K nearest neighbors. This will require a for loop over the number of testing observations.
+
+Provided knearest function:
+```{r}
+knearest=function(x,k){
+n=length(x)
+ind=c(1:n)
+temp=cbind(ind,x)
+temp.order=temp[order(x),]
+knearest=temp.order[1:k,1]
+return(knearest)
+}
+```
+```{r}
+k = 15
+nrows = nrow(xtest)
+set.seed(1)
+```
+Creating a 50 x k matrix for nearest neighbors:
+```{r}
+near.neigh = matrix(NA, nrow=nrows, ncol=k)
+for(i in 1:nrows) {
+  x = dst_combined_x[i:i,]
+  near.neigh[i,] = knearest(x, k)
+}
+near.neigh
+```
+#1d.
+
+Compute the posterior probability for each testing observation. For each testing observation, recover the training class corresponding to its K nearest neighbors and compute the mean. For e.g. if for the first testing observation, near.neigh[1,]=c(1,2,...,15) then the corresponding classes in the training response are ytrain[near.neigh[1,]] and finally the posterior for the first testing observation is, pr[1]=mean(ytrain[near.neigh[1,]]). You will need to run a loop to repeat this for every testing observation.
+
+Computing posterior probabilty for the 50 observations in near.neigh:
+```{r}
+pr = c()
+for(i in 1:nrows) {
+  pr[i] = mean(ytrain[near.neigh[i,],])
+}
+pr
+```
+#1e.
+
+Create a prediction variable pred with values 0,1 where pred[j]=1 if pr[j]>0.5 and 0 otherwise. Compare this prediction vector to the ytest variable to compute the total error in your classification.
+
+Creating a prediction vector:
+```{r}
+pred = c()
+for(j in 1:nrows) {
+  if(pr[j] > 0.5) {
+    pred[j] = 1
+  } else {
+    pred[j] = 0
+  }
+}
+```
+```{r}
+pred
+```
+Generating a table to make the prediction vector easier to interpret: 
+```{r}
+table(pred, ytest$y)
+```
+Calculating the total error:
+```{r}
+total.error = (25-22)/nrows
+total.error
+```
+Total error is 6%.

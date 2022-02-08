@@ -1,0 +1,212 @@
+---
+title: "Quiz 1"
+author: "Anthony Chelf"
+date: "9/20/2021"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Quiz 1a
+
+Import the data set in R.
+
+```{r}
+library(readr)
+```
+
+```{r}
+Quiz1data_2 <- read_csv("Quiz1data-2.csv")
+```
+```{r}
+head(Quiz1data_2)
+```
+
+# Question 1b
+
+The data contains the variables y, X1, X2 and X3. The objective of this problem is to predict the
+response y based on X1, X2 and X3 and to determine which variables are significantly associated
+with the response. Perform a multiple regression to answer this question. Provide a prediction at
+X1 = 0.25,X2 = 0.5,X3 = 0 and compute the corresponding confidence and prediction intervals.
+
+Building a model to see if X1,X2, or X3 are associated with the response variable y
+
+```{r}
+lm.fit = lm( y ~ X1+X2+X3, data = Quiz1data_2)
+summary(lm.fit)
+```
+Off of this initial model, it appears that X3 is significantly associated with the response variable y.
+
+Creating a point to use for prediction.
+```{r}
+pred_point = data.frame(X1=0.25, X2=0.5, X3=0)
+```
+
+Prediction:
+```{r}
+predict(lm.fit, pred_point)
+```
+
+Confidence intervals for predictions:
+```{r}
+predict(lm.fit, pred_point, interval = "prediction")
+```
+
+Confidence interval for mean prediction:
+```{r}
+predict(lm.fit, pred_point, interval = "confidence")
+```
+# Question 1c
+
+Looking at the next few plots, it looks like a there are a few outliers. This model needs work to be reliable.
+```{r}
+plot(lm.fit)
+```
+```{r}
+plot(lm.fit$fitted.values, lm.fit$residuals)
+abline(h=0, col = "green")
+```
+
+```{r}
+hist(residuals(lm.fit), col = "steelblue")
+```
+#Question 1d
+
+Propose solutions to the problems that you detect in part (c) and implement them on the data set.
+[Hint: studentized residual can be computed using the function studres(), cooks distance using
+cooks.distance() and the variance inflation factor using vif(). The function vif() is part of the R
+package car which you may need to install and unpack].
+
+A possible solution would be to identify existing outliers and then to create a new dataset that omits them.
+
+```{r}
+library(MASS)
+```
+
+Studentized Residuals:
+
+```{r}
+stud_resids <- studres(lm.fit)
+```
+
+```{r}
+plot(stud_resids)
+```
+Here I order the studentized residuals. You can see that 40, 10, and then 100 are all abnormal comparatively.
+
+```{r}
+final_data <- cbind(Quiz1data_2[c('y', 'X1', 'X2', 'X3')], stud_resids)
+final_data[order(-stud_resids),]
+```
+
+Confirms suspected outliers:
+
+```{r}
+outlier_indices = which(abs(stud_resids)>3)
+outlier_indices
+```
+Calculates cooks distance:
+
+```{r}
+cd <- cooks.distance(lm.fit)
+cd
+```
+
+```{r}
+n=nrow(Quiz1data_2)
+n
+```
+Identifies/confirms outliers and identifies high leverage points:
+
+```{r}
+levarage_indices = which(cd>4/n)
+levarage_indices
+```
+
+```{r}
+remove_indices = union(outlier_indices, levarage_indices)
+remove_indices
+```
+
+```{r}
+library(car)
+```
+
+Calculates the variance inflation factor:
+```{r}
+var_if = vif(lm.fit)
+var_if
+```
+Plots the variance inflation factor for a visual representation of the output above:
+```{r}
+barplot(var_if, main = "VIF Values", horiz = TRUE, col = "steelblue")
+abline(v = 5, lwd = 3, lty = 2)
+```
+Generates a new dataset with the outliers removed:
+```{r}
+newdata = Quiz1data_2[-remove_indices, ]
+View(newdata)
+```
+
+Fits a new model to the new dataset:
+```{r}
+lm.fit2 = lm( y ~ X1+X2+X3, data = newdata)
+summary(lm.fit2)
+```
+
+```{r}
+library(lmtest)
+```
+
+Runs a Breusch-Pagan test to test for heteroskedasticity: 
+```{r}
+bptest(lm.fit2)
+```
+```{r}
+plot(lm.fit2)
+```
+
+```{r}
+plot(lm.fit2$fitted.values, lm.fit2$residuals)
+abline(h=0, col = "green")
+```
+```{r}
+hist(residuals(lm.fit2), col = "steelblue")
+```
+# Question 1e
+
+Rerun your analysis of part (a) on the data that you obtain from part (d)
+
+Fits a new model to the new dataset that will address the identified heteroskedasticity with an adjusted log transformation: 
+```{r}
+lm.fit3=lm(log(1+y-min(y)) ~ X1+X2+X3, data = newdata)
+summary(lm.fit3)
+```
+
+```{r}
+plot(lm.fit3$fitted.values, lm.fit3$residuals)
+abline(h=0, col = "green")
+```
+# Question 1f
+
+Provide a prediction at X1 = 0.25,X2 = 0.5,X3 = 0 and compute the corresponding confidence and
+prediction intervals. Compare with the prediction in part (a) and comment on which you think is more
+believable.
+
+Prediction:
+```{r}
+predict(lm.fit3, pred_point)
+```
+
+Confidence intervals for predictions:
+```{r}
+predict(lm.fit3, pred_point, interval = "prediction")
+```
+
+Confidence interval for mean prediction:
+```{r}
+predict(lm.fit3, pred_point, interval = "confidence")
+```
+
+When comparing with the predictions with the lm.fit model, lm.fit3 is more reliable after taking out the outliers. lm.fit3 is more reliable than both previous models.
+

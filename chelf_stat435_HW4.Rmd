@@ -1,0 +1,277 @@
+---
+title: "Anthony Chelf Stat435 HW4"
+author: "Anthony Chelf"
+date: "11/30/2021"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Question 1
+
+The Wage data set contains a number of other features not explored in this chapter, such as marital status (maritl), job class (jobclass), and others. Explore the relationships between some of these other predictors and wage, and use non-linear fitting techniques in order to fit flexible models to the data. Create plots of the results obtained, and write a summary of your findings.
+```{r}
+library(ISLR) 
+attach(Wage)
+```
+```{r}
+set.seed(1)
+summary(Wage$maritl)
+```
+```{r}
+plot(maritl, wage)
+title("Marital Status vs Wage")
+```
+From this initial plot, we see that being married usually means a higher wage.
+
+```{r}
+summary(Wage$age)
+```
+```{r}
+plot(age, wage)
+title("Age vs Wage")
+```
+From this plot, we see that there are some golden years for making a higher wage roughly between 30-60.
+```{r}
+summary(Wage$education)
+```
+```{r}
+plot(education, wage)
+title("Education vs Wage")
+```
+From this plot we see that more education tends to lead towards a higher wage.
+```{r}
+summary(Wage$jobclass)
+```
+```{r}
+plot(jobclass, wage)
+title("Job Class vs Wage")
+```
+From this plot we see that jobs in the information sector usually mean a higher wage than those in the industrial side of things.
+```{r}
+library(gam)
+
+gam.fit1 <- gam(wage ~ ns(age,4))
+gam.fit2 <- gam(wage ~ ns(age,4) + maritl)
+gam.fit3 <- gam(wage ~ ns(age,4) + maritl + education)
+gam.fit4 <- gam(wage ~ ns(age,4) + maritl + education + jobclass)
+
+anova(gam.fit1, gam.fit2, gam.fit3, gam.fit4, test="F")
+```
+It appears that marital status, age, education, and job class are all valid predictors and significant variables in a model for predicting wage. Additionally, Model 2 appears to be the best followed by Model 3.
+```{r}
+par(mfrow = c(2, 3))
+plot(gam.fit4, se = T, col = "blue")
+```
+
+# Question 2
+
+Fit some of the non-linear models investigated in this chapter to the Auto data set. Is there evidence for non-linear relationships in this data set? Create some informative plots to justify your answer.
+
+```{r}
+set.seed(1)
+attach(Auto)
+pairs(Auto)
+```
+At a glance, there are a few relationships, specifically with mpg vs horsepower, weight, and displacement
+
+```{r}
+gam.fit5 <- gam(mpg ~ displacement + horsepower + weight, data = Auto)
+gam.fit6 <- gam(mpg ~ displacement + s(horsepower, 2) + weight, data = Auto)
+gam.fit7 <- gam(mpg ~ s(displacement, 5) + s(horsepower, 5) + s(weight, 5), data = Auto)
+anova(gam.fit5, gam.fit6, gam.fit7, test = 'F')
+```
+```{r}
+par(mfrow=c(1,3))
+plot(gam.fit7, se=TRUE, col="blue")
+```
+Testing linear with weight and quadratic with displacement and horsepower.
+```{r}
+gam.fit8 <- gam(mpg ~ s(displacement, 4) + s(horsepower, 4) + weight, data=Auto)
+par(mfrow=c(1,3))
+plot(gam.fit8, se=TRUE, col="Blue")
+```
+Displacement and horse power have non-linear relationships with mpg.
+
+# Question 3
+
+This question uses the variables dis (the weighted mean of distances to five Boston employment centers) and nox (nitrogen oxides concentration in parts per 10 million) from the Boston data. We will treat dis as the predictor and nox as the response.
+
+# (a) Use the poly() function to fit a cubic polynomial regression to predict nox using dis. Report the regression output, and plot the resulting data and polynomial fits.
+
+```{r}
+set.seed(1)
+library(MASS)
+attach(Boston)
+```
+```{r}
+lm.fit3 <- lm(nox~poly(dis,3), data=Boston)
+dislims <- range(Boston$dis)
+dis.grid <- seq(dislims[1], dislims[2], 0.1)
+preds <- predict(lm.fit3, newdata=list(dis=dis.grid), se=TRUE)
+se.bands <- preds$fit + cbind(2*preds$se.fit, -2*preds$se.fit)
+par(mfrow=c(1,1), mar=c(4.5,4.5,1,1), oma=c(0,0,4,0))
+plot(Boston$dis, Boston$nox, xlim=dislims, cex=0.5, col="black")
+lines(dis.grid, preds$fit, lwd=2, col="blue")
+matlines(dis.grid, se.bands, lwd=1, col="red", lty=3)
+```
+
+
+```{r}
+summary(lm.fit3)
+```
+
+# (b) Plot the polynomial fits for a range of different polynomial degrees (say, from 1 to 10), and report the associated residual sum of squares.
+
+```{r}
+rss.error <- rep(NA,10)
+for (i in 1:10) {
+  lm.fit4 <- lm(nox~poly(dis,i), data=Boston)
+  rss.error[i] <- sum(lm.fit4$residuals^2)
+}
+plot(rss.error, type="l", xlab = "Degree", ylab = "RSS Error")
+```
+```{r}
+rss.error
+```
+This is as expected. The RSS goes down as the polynomial degree increases.
+
+# (c) Perform cross-validation or another approach to select the optimal degree for the polynomial, and explain your results.
+```{r}
+library(boot)
+deltas = rep(NA, 10)
+for (i in 1:10) {
+    glm.fit = glm(nox ~ poly(dis, i), data = Boston)
+    deltas[i] = cv.glm(Boston, glm.fit, K = 10)$delta[2]
+}
+plot(1:10, deltas, xlab = "Degree", ylab = "CV error", type = "l", pch = 19, lwd = 2)
+```
+Based on the above plot and after a 10-fold cross validation, 4 appears to be the optimal degree for now.
+
+# (d) Use the bs() function to fit a regression spline to predict nox using dis. Report the output for the fit using four degrees of freedom. How did you choose the knots? Plot the resulting fit.
+
+The default setting of bs() that we are using for a cubic regression spline has 4 degrees of freedom, meaning that we should use a single knot in the spline.
+
+```{r}
+library(splines)
+sp.fit = lm(nox ~ bs(dis, df = 4, knots = c(4, 7, 11)), data = Boston)
+summary(sp.fit)
+```
+This summary shows that everything in the spline fit is significant.
+```{r}
+sp.pred = predict(sp.fit, list(dis = dis.grid))
+plot(nox ~ dis, data = Boston, col = "black")
+lines(dis.grid, sp.pred, col = "blue", lwd = 2)
+```
+The above plot shows a good fit for this data with the exception of when dis is greater than 10. But other than the very end it is solid.
+
+# (e) Now fit a regression spline for a range of degrees of freedom, and plot the resulting fits and report the resulting RSS. Describe the results obtained.
+
+```{r}
+cv.error = rep(NA, 16)
+for (i in 3:16) {
+    lm.fit = lm(nox ~ bs(dis, df = i), data = Boston)
+    cv.error[i] = sum(lm.fit$residuals^2)
+}
+cv.error[-c(1, 2)]
+```
+
+As the degree increases, the fit to the training data improves.
+
+# (f) Perform cross-validation or another approach in order to select the best degrees of freedom for a regression spline on this data. Describe your results.
+
+```{r}
+cv.error = rep(NA, 16)
+for (i in 3:16) {
+    lm.fit = glm(nox ~ bs(dis, df = i), data = Boston)
+    cv.error[i] = cv.glm(Boston, lm.fit, K = 10)$delta[2]
+}
+plot(3:16, cv.error[-c(1, 2)], lwd = 2, type = "l", xlab = "Degree", ylab = "CV error")
+```
+This plot is fairly jumpy, but clearly shows 12 as the minimum. I choose 12 as the optimal degree of freedom.
+
+# Question 4
+
+This question relates to the College data set.
+
+# (a) Split the data into a training set and a test set. Using out-of-state tuition as the response and the other variables as the predictors, perform forward stepwise selection on the training set in order to identify a satisfactory model that uses just a subset of the predictors.
+
+```{r}
+set.seed(1)
+library(ISLR)
+library(leaps)
+attach(College)
+train = sample(length(Outstate), length(Outstate)/2)
+test = -train
+College.train = College[train, ]
+College.test = College[test, ]
+reg.fit = regsubsets(Outstate ~ ., data = College.train, nvmax = 17, method = "forward")
+reg.summary = summary(reg.fit)
+par(mfrow = c(1, 3))
+plot(reg.summary$cp, xlab = "Number of Variables", ylab = "Cp", type = "l")
+min.cp = min(reg.summary$cp)
+std.cp = sd(reg.summary$cp)
+abline(h = min.cp + 0.2 * std.cp, col = "red", lty = 2)
+abline(h = min.cp - 0.2 * std.cp, col = "red", lty = 2)
+plot(reg.summary$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
+min.bic = min(reg.summary$bic)
+std.bic = sd(reg.summary$bic)
+abline(h = min.bic + 0.2 * std.bic, col = "red", lty = 2)
+abline(h = min.bic - 0.2 * std.bic, col = "red", lty = 2)
+plot(reg.summary$adjr2, xlab = "Number of Variables", ylab = "Adjusted R2", 
+    type = "l", ylim = c(0.4, 0.84))
+max.adjr2 = max(reg.summary$adjr2)
+std.adjr2 = sd(reg.summary$adjr2)
+abline(h = max.adjr2 + 0.2 * std.adjr2, col = "red", lty = 2)
+abline(h = max.adjr2 - 0.2 * std.adjr2, col = "red", lty = 2)
+```
+Getting all the predictor names for quick reference.
+```{r}
+co <- coef(reg.fit, id = 6)
+names(co)
+```
+# (b) Fit a GAM on the training data, using out-of-state tuition as the response and the features selected in the previous step as the predictors. Plot the results, and explain your findings.
+
+```{r}
+gam.fit9 <- gam(Outstate ~ Private + s(Room.Board, df = 2) + s(perc.alumni, df = 2) + 
+    s(PhD, df = 2) + s(Expend, df = 2) + s(Grad.Rate, df = 2), data = College.train)
+par(mfrow = c(2, 3))
+plot(gam.fit9, se = T, col = "blue")
+```
+Expend definitely has a non-linear relationship with outstate. PhD also appears to have one, albeit not as significant. And then lastly there is potential for grad.rate and room.board to have slight non-linear relationships with outstate, but they'd be very slight.
+
+# (c) Evaluate the model obtained on the test set, and explain the results obtained.
+```{r}
+calc_mse <- function(y, y_hat) {
+  return(mean((y - y_hat)^2))
+}
+
+calc_rmse <- function(y, y_hat) {
+  return(sqrt(calc_mse(y, y_hat)))
+}
+calc_r2 <- function(y, y_hat) {
+  y_bar <- mean(y)
+  rss <- sum((y - y_hat)^2)
+  tss <- sum((y - y_bar)^2)
+  return(1 - (rss / tss))
+}
+gam.pred = predict(gam.fit9, College.test)
+gam.rmse = calc_rmse(College.test$Outstate, gam.pred)
+cat("RMSE:", gam.rmse, "\n")
+```
+```{r}
+gam.r2 <- calc_r2(College.test$Outstate, gam.pred)
+cat("R^2:", gam.r2, "\n")
+```
+When fitting the data with a GAM with 6 predictors, we get an RSS of .7597905 and an RMSE of 1854.236.
+
+# (d) For which variables, if any, is there evidence of a non-linear relationship with the response?
+
+```{r}
+summary(gam.fit9)
+```
+Looking at the anova for non-parametric effects, this kind of fits with what we saw in part b above. Expend clearly has a significant non-linear relationship with outstate. PhD also has a slight non-linear relationship with outstate. The other predictors appear more linear than not.
+
+
+
+

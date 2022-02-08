@@ -1,0 +1,83 @@
+---
+title: "Quiz 2"
+author: "Anthony Chelf"
+date: "10/11/2021"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Question 1a
+Simulate a data set as follows
+
+```{r}
+set.seed(1)
+```
+
+```{r}
+n = 300; p = 200; s = 5
+```
+
+```{r}
+x = matrix(rnorm(n*p), n, p)
+b = c(rep(1, s), rep(0, p-s))
+y = 1+x%*%b+rnorm(n)
+```
+
+# Question 1b
+Define a grid L = {0,...,2} of 100 numbers between 0 and 2, this grid shall serve as potential values for the regularizer lambda
+
+```{r}
+L = seq(0, 2, length.out = 100)
+L
+```
+
+# Question 1c
+Use the function glmnet() to obtain lasso estimates for each value in the grid that you define in part(b). Using the function coef(), extract the estimated coefficient vector when lambda = L[10], i.e., the 10th value in the grid L.
+
+```{r}
+library(glmnet)
+library(MASS)
+```
+```{r}
+lasso.mod = glmnet(x, y, lambda = L, alpha = 1)
+summary(lasso.mod)
+```
+```{r}
+hbeta=coef(lasso.mod, s = 10)
+as.numeric(hbeta)
+```
+# Question 1d
+For each value of lambda in the grid L of part(b), compute the mean squared error on the entire dataset. (Use a for() loop for this purpose). This will provide a vector of 100 values of mse, one for each value of lambda. Plot lambda vs mse. What do you observe?
+
+I am unsure of how to continue from here after reviewing the lectures, labs, and relevant information in ISLR.
+
+```{r}
+
+```
+
+# Question 1e
+Using a for() loop. compute the cross validation error, for each value of lambda in the grid L, under a k = 5
+fold cross validation setup. (you will need to repeatedly divide the data into testing and training, this
+will require another for() loop).
+```{r}
+
+```
+
+# Question 1f
+Compile all your code into a custom function with input arguments x, y, k and a grid L. This function
+should output the following results, (i) the best fit model with a k-fold cross validation, (ii) the vector
+of cross validation errors (one for each value of lambda), (iii) the grid L used for cross validation, (iv) the
+value of lambda at which the best fit model is obtained.
+```{r}
+
+
+```
+
+# Question 1g
+Finally, use the function you make in Part (f) with k = 5, then extract the vector of cross validation
+errors (say, CVV) and the grid L that is used. Make a plot of L vs. CVV.
+```{r}
+
+```
+
